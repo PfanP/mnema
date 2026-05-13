@@ -127,7 +127,7 @@ services:
     volumes:
       - mongo_data:/data/db
 
-  proxy:
+  mnema:
     image: $Image
     restart: unless-stopped
     ports:
@@ -194,13 +194,13 @@ while ($attempts -lt $maxAttempts) {
 
 if (-not $ready) {
   Write-Warn "Mnema started but did not become healthy within 60 seconds."
-  Write-Host "  Check logs: docker compose -f `"$ComposeFile`" logs proxy"
+  Write-Host "  Check logs: docker compose -f `"$ComposeFile`" logs mnema"
   Write-Host "  It may still be initializing. Try opening http://localhost:$MnemaPort in a moment."
 } else {
   Write-Info "Mnema is ready!"
 }
 
-$tokenLine = docker compose -f "$ComposeFile" logs proxy 2>$null |
+$tokenLine = docker compose -f "$ComposeFile" logs mnema 2>$null |
   Select-String "API token:" |
   Select-Object -Last 1
 
@@ -212,7 +212,7 @@ Write-Host "  Your API token:"
 if ($tokenLine) {
   Write-Host "  $($tokenLine.Line.Trim())"
 } else {
-  Write-Host "  (check logs: docker compose -f `"$ComposeFile`" logs proxy)"
+  Write-Host "  (check logs: docker compose -f `"$ComposeFile`" logs mnema)"
 }
 Write-Host ""
 Write-Host "  Open http://localhost:$MnemaPort/onboarding to get started."
