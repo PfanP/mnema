@@ -137,6 +137,7 @@ services:
       - $InstallDirDocker:/app/.mnema
     environment:
       CONFIG_PATH: /app/config/bootstrap.toml
+      MNEMA_HOME: /app/.mnema
       MONGODB_URI: mongodb://`${MONGO_INITDB_ROOT_USERNAME}:`${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/?directConnection=true&authSource=admin
     depends_on:
       mongo:

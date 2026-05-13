@@ -11,14 +11,15 @@ export interface BootstrapConfig {
   master_key_path: string;
 }
 
-const CONFIG_PATH = resolve(homedir(), ".mnema/config.toml");
+const MNEMA_HOME = process.env.MNEMA_HOME ?? resolve(homedir(), ".mnema");
+const CONFIG_PATH = resolve(MNEMA_HOME, "config.toml");
 
 const DEFAULT: BootstrapConfig = {
   mongodb_uri: "mongodb://mongo:27017/?directConnection=true",
   mongodb_db: "mnema",
   port: 5757,
   user_id: "local",
-  master_key_path: resolve(homedir(), ".mnema/master.key"),
+  master_key_path: resolve(MNEMA_HOME, "master.key"),
 };
 
 const CONFIG_TOML = (c: BootstrapConfig) => `mongodb_uri = "${c.mongodb_uri}"

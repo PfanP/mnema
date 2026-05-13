@@ -21,9 +21,10 @@ services:
       - "${MNEMA_PORT:-5757}:5757"
     volumes:
       - ./config:/app/config
-      - ~/.mnema:/root/.mnema
+      - ~/.mnema:/app/.mnema
     environment:
       CONFIG_PATH: /app/config/bootstrap.toml
+      MNEMA_HOME: /app/.mnema
     depends_on:
       - mongo
     networks:
