@@ -131,7 +131,7 @@ services:
     image: $Image
     restart: unless-stopped
     ports:
-      - "127.0.0.1:`${MNEMA_PORT:-5757}:5757"
+      - "`${MNEMA_PORT:-5757}:5757"
     volumes:
       - $InstallDirDocker/config:/app/config
       - $InstallDirDocker:/app/.mnema
