@@ -33,6 +33,7 @@ RUN groupadd --system mnema && useradd --system --gid mnema --no-create-home --s
 COPY --from=build /app/dist ./dist
 COPY --from=deps /app/node_modules ./node_modules
 COPY package*.json ./
+COPY src/static ./dist/static
 COPY --from=crypt /tmp/lib/mongo_crypt_v1.so /app/vendor/mongo_crypt_v1.so
 
 RUN mkdir -p /app/config /app/.mnema && \
