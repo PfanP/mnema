@@ -10,19 +10,19 @@
 **Linux and macOS:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jeffreyflynt/mnema/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/pfanp/mnema/main/scripts/install.sh | sh
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-irm https://raw.githubusercontent.com/jeffreyflynt/mnema/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/pfanp/mnema/main/scripts/install.ps1 | iex
 ```
 
 If blocked by corporate policy:
 
 ```powershell
-irm https://raw.githubusercontent.com/jeffreyflynt/mnema/main/scripts/install.ps1 -OutFile install.ps1
+irm https://raw.githubusercontent.com/pfanp/mnema/main/scripts/install.ps1 -OutFile install.ps1
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 

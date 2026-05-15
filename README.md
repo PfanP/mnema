@@ -1,170 +1,90 @@
-# Mnema: Local Long-Term Memory for Any OpenAI-Compatible Client
+# Mnema
 
-![Build](https://github.com/jeffreyflynt/mnema/actions/workflows/ci.yml/badge.svg)
+![Build](https://github.com/PfanP/mnema/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker)
 ![arXiv](https://img.shields.io/badge/arXiv-2605.11325-b31b1b.svg)
 
-You explain something to one person and it goes right over their head. Same thing, different person, clicks instantly. The difference isn't the information. It's knowing how someone hears things.
+> Local long-term memory for any OpenAI-compatible client.
 
-Your AI has the same problem. It doesn't fail because it lacks information. It fails because it doesn't know how to reach _you_, how you process decisions, what kind of answer actually lands, what you've already ruled out and why.
+Mnema is a local proxy that sits between your AI client and any upstream LLM provider. It builds a structured model of your preferences, decisions, and working context from your conversations, then injects the relevant slice into every request — automatically, without any change to your client.
 
-Mnema fixes that. It's a local proxy that learns how you think, what you've decided, and how you want to be spoken to, then brings that into every session automatically. Point any OpenAI-compatible client at `localhost:5757` and every response is already yours. Your client doesn't know Mnema exists.
+Point an OpenAI-compatible client at `http://localhost:5757/v1` and start working. The client does not need to know Mnema exists.
 
-New install? Start here: [Quickstart](docs/quickstart.md)
+## Why Mnema
 
-## The Problem
+Every new session with an LLM starts from zero. You re-establish your stack, your voice, the decisions you made last week, and the approaches you have already ruled out. Most memory tools address this by storing transcripts and retrieving similar text, leaving the model to infer what matters and how to apply it.
 
-Every new session starts from zero. You re-explain your stack, restate your voice, re-establish decisions you made weeks ago. And when you don't re-explain, when you just ask the question, this is what you get.
+Mnema takes a different approach:
 
-A developer had already established: TypeScript, Fastify, MongoDB, raw driver, composition over inheritance. New session, they asked:
+- **Structured beliefs, not transcripts.** Every observation becomes a typed belief (Preference, Decision, Entity, Relation, Open Question) with a `why_it_matters` field the model can act on directly.
+- **Rejected alternatives, indexed.** What you have ruled out is a first-class signal alongside what you have chosen. Ask about Mongoose and Mnema surfaces your decision to use the raw MongoDB driver.
+- **Alias-weighted retrieval.** Returns the belief that matches what you are actually asking about, not everything in the same semantic neighborhood.
+- **Scoped context.** A universal / domain / project hierarchy keeps engineering preferences out of creative sessions and one project's stack out of another's.
+- **Mid-session corrections.** Recent turns are always injected in full so the model sees corrections immediately; the extraction worker reconciles older beliefs asynchronously.
 
-> _How should I structure my repo?_
+## Installation
 
-200 lines of Python using SQLAlchemy. Wrong language. Wrong database. Wrong paradigm. The next prompt becomes a correction instead of progress.
+**Linux / macOS**
 
-With Mnema running, same question, cold start, new session:
-
-```typescript
-export function makeUserRepository(db: Db): UserRepository {
-  const col: Collection<UserDoc> = db.collection("users");
-
-  return {
-    async findById(id, ctx) {
-      const doc = await col.findOne(
-        { _id: new ObjectId(id) },
-        { session: ctx?.session },
-      );
-      return doc ? toUser(doc) : null;
-    },
-    async insert(data, ctx) {
-      const doc: UserDoc = {
-        _id: new ObjectId(),
-        ...data,
-        createdAt: new Date(),
-      };
-      await col.insertOne(doc, { session: ctx?.session });
-      return toUser(doc);
-    },
-  };
-}
+```bash
+curl -fsSL https://raw.githubusercontent.com/PfanP/mnema/main/scripts/install.sh | bash
 ```
 
-TypeScript. MongoDB raw driver. Factory function. No re-explanation required because those preferences were already in the world model.
+**Windows (PowerShell)**
 
-This isn't just a developer problem. A writer shouldn't re-explain a character's voice in session four. A researcher shouldn't re-litigate a ruled-out approach. A consultant switching between clients shouldn't re-brief from scratch. The model should already know.
+```powershell
+irm https://raw.githubusercontent.com/PfanP/mnema/main/scripts/install.ps1 | iex
+```
 
-## Why This Is Different
+The installer prints your API token on first start and saves it to `~/.mnema/token`. Full setup instructions live in [docs/quickstart.md](docs/quickstart.md).
 
-Most memory tools are glorified search. They store what you said and retrieve what sounds similar. That's not memory, it's a transcript with a search bar. The model still has to read it, infer what matters, and figure out how to apply it, competing with the actual task at hand.
+## Getting Started
 
-Mnema doesn't retrieve. It instructs.
+1. **Onboarding.** Open [http://localhost:5757/onboarding](http://localhost:5757/onboarding) to connect a provider, pick a default model, and seed your world model.
+2. **Point your client.** Configure it with base URL `http://localhost:5757/v1` and the bearer token from `~/.mnema/token`.
+3. **Inspect.** Open [http://localhost:5757/beliefs](http://localhost:5757/beliefs) to view, pin, edit, or remove beliefs.
 
-Every observation is converted into a structured belief with a `why_it_matters` field: not just "uses TypeScript with strict mode" but "shapes all code examples toward TypeScript with strict mode and no implicit any." The model receives instructions it can act on directly, not raw material to process first.
-
-**It knows what you ruled out, not just what you chose.** Rejected alternatives are indexed too. Ask about Mongoose and Mnema surfaces your MongoDB raw driver decision, because what you ruled out is a query path to what you actually use. It doesn't just know you chose MongoDB, it knows why you rejected Mongoose, so it never suggests it again.
-
-**It retrieves what applies, not what's similar.** Your stack lives in a semantic neighborhood: Redis, TypeScript, Fastify, MongoDB all score similarly against each other. Similarity search returns everything nearby. Mnema uses alias-weighted term matching that returns exactly the belief that matches what you're actually asking about, not everything in the neighborhood.
-
-**It learns how you refer to things.** Call your cat "my baby" once and that phrase resolves correctly next time. The longer you use it, the more precisely it finds what you mean.
-
-**It knows how to talk to you.** Not just your preferences, but your communication patterns, whether you want clarifying questions before long responses, whether you process tradeoffs first or conclusions first. The same information, delivered the way it actually lands for you.
-
-**It catches up mid-session.** Say "actually, let's switch to Postgres" and Mnema handles it in two layers: your recent turns are always injected in full so the model sees the change immediately, and the extraction worker supersedes the old belief before your next session starts.
-
-## Who This Is For
-
-Mnema is for anyone whose work compounds across sessions, because what you ruled out last week matters as much as what you decided this morning.
-
-- **Engineers**: Stop re-explaining that you hate ORMs, use Vitest, and prefer explicit error returns over exceptions.
-- **Writers**: Character voices, world bibles, and open plot threads stay consistent across every session.
-- **Data Scientists**: Modeling decisions, ruled-out approaches, and dataset quirks persist across every experiment.
-- **Students & Researchers**: Your thesis angle, ruled-out sources, and advisor feedback don't reset mid-project.
-- **Consultants**: Switch cleanly between client contexts without re-briefing from scratch.
-
-Works with chat clients, IDEs, and manual mode. See [docs/clients.md](docs/clients.md) for setup by client type.
-
-## Quick Start
-
-See [docs/quickstart.md](docs/quickstart.md) for full setup instructions. The short version:
-
-1. **Install and start Mnema**
-
-   **Linux / macOS:**
-
-   ```bash
-   curl -fsSL https://raw.githubusercontent.com/jeffreyflynt/mnema/main/scripts/install.sh | bash
-   ```
-
-   **Windows (PowerShell):**
-
-   ```powershell
-   irm https://raw.githubusercontent.com/jeffreyflynt/mnema/main/scripts/install.ps1 | iex
-   ```
-
-   Your API token is printed to the terminal on first start and saved to `~/.mnema/token`.
-
-2. **Complete setup.** Open [http://localhost:5757/onboarding](http://localhost:5757/onboarding) in your browser. Connect a provider, pick a default model, and answer a few questions to seed your world model.
-
-3. **Point your client** at `http://localhost:5757/v1` with your bearer token. Open [http://localhost:5757/beliefs](http://localhost:5757/beliefs) to view and manage your world model.
-
-## Trust and Ownership
-
-- **Fully local.** Runs entirely on your machine. Your context never leaves `localhost`.
-- **Encrypted at rest.** Belief content is encrypted. See [docs/security.md](docs/security.md).
-- **No hidden profiles.** Every belief is visible, editable, and correctable at `/beliefs`. Pin what matters, correct what's wrong.
-- **Portable.** Export your entire world model as a passphrase-encrypted archive and restore it on any machine.
-- **Pausable.** Stop extraction globally from Settings, or per-session with `!extract off` directly in your chat.
+Per-client setup notes (chat UIs, IDEs, manual integrations) are in [docs/clients.md](docs/clients.md).
 
 ## How It Works
 
-Mnema sits between your client and any upstream LLM provider. On every request:
+On every request, Mnema:
 
-1. Assembles a **belief context**: a curated slice of your world model, budgeted within a token ceiling
-2. Injects it into the system prompt alongside a sidecar instruction, a structured metadata block the model writes back, which Mnema strips before returning the response to your client
-3. Forwards the call to the resolved provider (streaming or non-streaming)
-4. Returns a standard OpenAI-format response, the client sees no difference
+1. **Assembles context.** Selects a token-budgeted slice of the world model relevant to the current turn.
+2. **Injects.** Adds the slice to the system prompt alongside a structured sidecar block the model writes back. The sidecar is stripped before the response returns to your client.
+3. **Forwards the request.** Calls the resolved provider in streaming or non-streaming mode and returns a standard OpenAI-format response.
+4. **Extracts asynchronously.** A background worker analyzes the exchange and updates the belief store after the response is delivered. Extraction never blocks the request path.
 
-Context assembly is local and fast. The belief extraction worker runs asynchronously after the response, so it never blocks your session.
+## World Model
 
-### Your world model
+Beliefs are typed (`Preference`, `Decision`, `Entity`, `Relation`, `OpenQuestion`) and scoped to one of three levels:
 
-Beliefs are organized into types: **Preferences**, **Decisions**, **Entities**, **Relations**, and **Open Questions**. Preferences carry an optional subtype: **Expertise** (depth calibration) or **Style** (communication patterns), and are scoped by domain so your engineering preferences don't bleed into creative sessions.
+| Scope     | Applies to                                     | Example                                     |
+| --------- | ---------------------------------------------- | ------------------------------------------- |
+| Universal | Every session                                  | Communication style, engagement preferences |
+| Domain    | A discipline (`domain:code`, `domain:writing`) | Stack choices, tool preferences             |
+| Project   | A named project                                | Repo conventions, database choice           |
 
-Scoping is a three-level hierarchy:
+Sub-domains narrow further (`domain:code/typescript`).
 
-- **Universal** - communication style and engagement preferences. Surfaces everywhere.
-- **Domain** - how you work within a discipline (`domain:code`, `domain:writing`). Sub-domains narrow further: `domain:code/typescript` applies to all TypeScript work but not Python.
-- **Project** - facts specific to a named project. Your API's database choice doesn't bleed into your side project.
-
-Mnema sets scope automatically from your first message. You can also set it explicitly:
+Scope is detected automatically from the first message. Override or pause with chat commands:
 
 ```
 !scope domain:writing
 !scope domain:code/typescript
+!extract off          # stop recording this session
+!extract on           # resume
+!extract global off   # pause everywhere
 ```
 
-To pause extraction for a session without opening Settings:
+See [docs/beliefs.md](docs/beliefs.md) for the full reference.
 
-```
-!extract off          ← stops recording this session
-!extract on           ← resumes
-!extract global off   ← pauses everywhere
-```
+## Supported Models
 
-See [docs/beliefs.md](docs/beliefs.md) for the full walkthrough.
+Belief extraction depends on reliable structured output. Heavily quantized or smaller models do not meet the consistency the extraction worker requires.
 
-### Token efficiency
-
-Mnema reduces token costs in two directions. On the supply side, beliefs are retrieved selectively, the belief store stays compact through continuous compaction, and prompt caching on the static and belief tiers means you pay for context injection once per session. On the demand side, a model that already knows to ask before executing prevents the most expensive failure mode: a long, confident response that went the wrong direction. A two-sentence clarifying question that costs 50 tokens and prevents a 5,000-token miss is a 99% reduction on that exchange.
-
-See [docs/prompt-caching.md](docs/prompt-caching.md) for details.
-
-### Supported models
-
-Belief extraction requires reliable structured output. Smaller or heavily quantized models won't produce the consistency the extraction worker needs.
-
-| Family          | Floor                          | Status    |
+| Family          | Minimum                        | Status    |
 | --------------- | ------------------------------ | --------- |
 | Claude          | 4.5 and above                  | Community |
 | GPT             | GPT-4o-mini and above          | Community |
@@ -172,24 +92,42 @@ Belief extraction requires reliable structured output. Smaller or heavily quanti
 | Bedrock Claude  | Anthropic Claude 4.5 and above | Verified  |
 | Bedrock Nova    | Amazon Nova Pro                | Community |
 
-Any OpenAI-compatible endpoint serving one of these models works, including Bedrock gateways, LiteLLM, and similar setups.
+Any OpenAI-compatible endpoint serving one of these models is supported, including Bedrock gateways and LiteLLM proxies.
 
-## Tradeoffs and The Ramp
+## Token Efficiency
 
-Mnema is conservative by design. It would rather surface nothing than surface the wrong thing. If a belief isn't surfacing when you'd expect it, pinning it is the most direct fix. Retrieval quality improves over time as the system learns new ways you refer to things. See [docs/retrieval.md](docs/retrieval.md) for how retrieval works and how to get the most out of it.
+- **Selective retrieval** keeps the injected context compact.
+- **Continuous compaction** prevents the belief store from growing unbounded.
+- **Prompt caching** on the static and belief tiers means context injection is paid for once per session.
 
-The ramp depends on how you start. Import an existing skills file or run onboarding and the first session is already informed. Starting cold: the first session will be good, the tenth noticeably better, the fiftieth will feel like working with someone who actually knows you.
+See [docs/prompt-caching.md](docs/prompt-caching.md).
 
-Multi-user support and belief sharing are not yet implemented. See [docs/roadmap.md](docs/roadmap.md) for what's coming.
+## Security and Privacy
 
-## Reproducing the Evaluation
+- **Local-only.** All processing happens on your machine. Context never leaves `localhost`.
+- **Encrypted at rest.** Belief content is encrypted on disk. See [docs/security.md](docs/security.md).
+- **Inspectable.** Every belief is visible and editable at `/beliefs`. Pin what should always surface; correct what is wrong.
+- **Portable.** Export the world model as a passphrase-encrypted archive and restore it on any machine.
+- **Pausable.** Stop extraction globally from Settings or per-session via `!extract off`.
 
-The retrieval claims in the paper are reproducible from the repo. See [docs/eval.md](docs/eval.md) for instructions. Docker is the only prerequisite for the BM25 evaluation.
+## Performance Notes
+
+Mnema is conservative by design — it prefers surfacing nothing over surfacing the wrong belief. If a belief is not appearing when expected, pinning it is the most direct fix. Retrieval quality improves over time as the system learns the ways you refer to things. See [docs/retrieval.md](docs/retrieval.md).
+
+Cold-start sessions are usable from day one and improve significantly over the first dozen sessions as the world model fills out. Importing an existing skills file or completing onboarding accelerates the ramp.
+
+## Evaluation
+
+The retrieval results in the accompanying paper are reproducible from this repository. See [docs/eval.md](docs/eval.md). The BM25 evaluation requires only Docker.
+
+## Roadmap
+
+Multi-user support and belief sharing are not yet implemented. See [docs/roadmap.md](docs/roadmap.md) for what is planned.
 
 ## Contributing
 
-See [docs/contributing.md](docs/contributing.md).
+Contributions are welcome. See [docs/contributing.md](docs/contributing.md).
 
 ## License
 
-MIT
+[MIT](LICENSE)

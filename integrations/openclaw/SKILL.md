@@ -8,7 +8,7 @@ metadata:
     "openclaw":
       {
         "emoji": "🧠",
-        "homepage": "https://github.com/jeffreyflynt/mnema",
+        "homepage": "https://github.com/pfanp/mnema",
         "requires": { "bins": ["docker"] },
         "primaryEnv": "MNEMA_TOKEN",
         "envVars":

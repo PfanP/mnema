@@ -23,7 +23,7 @@ Mnema is early and the surface area is intentionally small. The best contributio
 ## Getting Started
 
 ```bash
-git clone https://github.com/jeffreyflynt/mnema
+git clone https://github.com/pfanp/mnema
 cd mnema
 npm install
 cp .env.example .env   # add your provider keys

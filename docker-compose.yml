@@ -2,31 +2,33 @@ services:
   mongo:
     image: mongodb/mongodb-atlas-local:8
     restart: unless-stopped
+    environment:
+      MONGODB_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGODB_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 5s
       retries: 5
-    ports:
-      - "27017:27017"
     volumes:
       - mongo_data:/data/db
     networks:
       - internal
 
   mnema:
-    build: ./
+    image: mnemaai/mnema:latest
     restart: unless-stopped
     ports:
       - "${MNEMA_PORT:-5757}:5757"
     volumes:
-      - ./config:/app/config
       - ~/.mnema:/app/.mnema
     environment:
       CONFIG_PATH: /app/config/bootstrap.toml
       MNEMA_HOME: /app/.mnema
+      MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/?directConnection=true&authSource=admin
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     networks:
       - internal
       - external
